@@ -2,8 +2,9 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { createRefreshToken, createAccessToken } from './authTokens';
+import { sendRefreshCookie } from './resolvers/Users/sendRefreshCookie';
 
-const prisma = new PrismaClient();
+const { user } = new PrismaClient();
 
 export default async function refreshToken(req: Request, res: Response) {
   const token = req.cookies.jid;
@@ -18,19 +19,19 @@ export default async function refreshToken(req: Request, res: Response) {
     console.log(error);
     return res.send({ ok: false, accessToken: '' });
   }
-  const user = await prisma.user.findUnique({
+  const foundUser = await user.findUnique({
     where: { id: payload.userId },
   });
 
-  if (!user) {
+  if (!foundUser) {
     return res.send({ ok: false, accessToken: '' });
   }
 
-  if (user.token_version !== payload.tokenVersion) {
+  if (foundUser.token_version !== payload.tokenVersion) {
     console.log('invalid token version');
     return res.send({ ok: false, accessToken: '' });
   }
 
-  res.cookie('jid', createRefreshToken(user), { httpOnly: true });
-  return res.send({ ok: true, accessToken: createAccessToken(user) });
+  sendRefreshCookie(res, createRefreshToken(foundUser));
+  return res.send({ ok: true, accessToken: createAccessToken(foundUser) });
 }

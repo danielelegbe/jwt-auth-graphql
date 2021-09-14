@@ -13,7 +13,6 @@ import {
   Arg,
 } from 'type-graphql';
 import { Post, User } from '../prisma/generated/type-graphql/models/index';
-import { isInputType } from 'graphql';
 
 const prisma = new PrismaClient();
 

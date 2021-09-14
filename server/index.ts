@@ -1,6 +1,7 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import { PrismaClient } from '.prisma/client';
 import { PostResolver } from './resolvers/posts.resolvers';
 import { UserResolver } from './resolvers/Users/users.resolvers';
@@ -14,6 +15,12 @@ dotenv.config();
 const prisma = new PrismaClient();
 const PORT = 4000;
 const app = express();
+app.use(
+  cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 
 const main = async () => {
@@ -22,12 +29,13 @@ const main = async () => {
   const schema = await buildSchema({
     resolvers: [PostResolver, UserResolver, TestResolver],
   });
+
   const apolloServer = new ApolloServer({
     schema,
     context: ({ req, res }): MyContext => ({ req, res, prisma }),
   });
   await apolloServer.start();
-  apolloServer.applyMiddleware({ app });
+  apolloServer.applyMiddleware({ app, cors: false });
   app.listen(PORT, () => console.log('Listening on port 4000'));
 };
 

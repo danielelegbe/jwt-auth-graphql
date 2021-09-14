@@ -20,6 +20,8 @@ import { IsEmail, Length } from 'class-validator';
 import LoginResponse from './LoginResponse';
 import { MyContext } from '../../Context';
 import { createAccessToken, createRefreshToken } from '../../authTokens';
+import { ApolloError } from 'apollo-server-errors';
+import { sendRefreshCookie } from './sendRefreshCookie';
 const prisma = new PrismaClient();
 
 // Arg Types
@@ -61,21 +63,21 @@ export class UserResolver {
     return null;
   }
 
-  @Mutation(() => User)
+  @Mutation(() => Boolean)
   async register(
     @Arg('data') { email, password }: NewUserInput
-  ): Promise<User> {
+  ): Promise<boolean> {
     const userExists = await prisma.user.findUnique({ where: { email } });
-
-    if (userExists) throw new Error('User already exists');
+    if (userExists) throw new ApolloError('User already exists');
     else {
       const hashedPassword = await hash(password);
-      return await prisma.user.create({
+      await prisma.user.create({
         data: {
           email,
           password: hashedPassword,
         },
       });
+      return true;
     }
   }
 
@@ -96,14 +98,20 @@ export class UserResolver {
       throw new Error('Invalid password');
     }
 
-    res.cookie('jid', createRefreshToken(foundUser), {
-      httpOnly: true,
-    });
+    sendRefreshCookie(res, createRefreshToken(foundUser));
 
     return {
       accessToken: createAccessToken(foundUser),
+      user: foundUser,
     };
   }
+
+  @Mutation(() => Boolean)
+  logout(@Ctx() { res }: MyContext) {
+    sendRefreshCookie(res, '');
+    return true;
+  }
+
   @Mutation(() => User)
   async revokeRefreshTokensForUser(
     @Args() { id }: FindOneUserArgs

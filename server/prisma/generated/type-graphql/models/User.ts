@@ -22,8 +22,5 @@ export class User {
 
   posts?: Post[];
 
-  @TypeGraphQL.Field((_type) => TypeGraphQL.Int, {
-    nullable: false,
-  })
   token_version!: number;
 }
