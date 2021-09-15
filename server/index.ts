@@ -14,16 +14,15 @@ import refreshToken from './refreshToken';
 dotenv.config();
 const prisma = new PrismaClient();
 const PORT = 4000;
-const app = express();
-app.use(
-  cors({
-    origin: 'http://localhost:3000',
-    credentials: true,
-  })
-);
-app.use(cookieParser());
-
 const main = async () => {
+  const app = express();
+  app.use(
+    cors({
+      origin: ['http://localhost:3000', 'https://studio.apollographql.com'],
+      credentials: true,
+    })
+  );
+  app.use(cookieParser());
   app.post('/refresh-token', refreshToken);
 
   const schema = await buildSchema({
@@ -34,6 +33,7 @@ const main = async () => {
     schema,
     context: ({ req, res }): MyContext => ({ req, res, prisma }),
   });
+
   await apolloServer.start();
   apolloServer.applyMiddleware({ app, cors: false });
   app.listen(PORT, () => console.log('Listening on port 4000'));

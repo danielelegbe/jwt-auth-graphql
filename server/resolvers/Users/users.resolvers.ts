@@ -38,7 +38,7 @@ class NewUserInput {
   email!: string;
 
   @Field(() => String)
-  @Length(6, 20)
+  @Length(6, 255, { message: 'password must be at least 6 characters' })
   password!: string;
 }
 
